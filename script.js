@@ -1,14 +1,22 @@
-// Firestore bağlantısı ve gerekli fonksiyonlar
-import { db } from './firebase-config.js';
+// Firestore ve Auth bağlantısı ve gerekli fonksiyonlar
+import { db, auth } from './firebase-config.js';
 import {
   collection,
   addDoc,
   doc,
   updateDoc,
   deleteDoc,
-  onSnapshot
+  onSnapshot,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { isValidTaskText, CATEGORIES, normalizeCategory } from './taskUtils.js';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { isValidTaskText, CATEGORIES, normalizeCategory, getAuthErrorMessage } from './taskUtils.js';
 
 // Gerekli HTML elemanlarını seç
 const taskInput = document.getElementById('taskInput');
@@ -17,8 +25,17 @@ const taskList = document.getElementById('taskList');
 const categorySelect = document.getElementById('categorySelect');
 const filterSelect = document.getElementById('filterSelect');
 
-// Firestore'daki "tasks" koleksiyonuna referans
-const tasksCollection = collection(db, 'tasks');
+// Giriş/kayıt ekranı elemanları
+const authScreen = document.getElementById('authScreen');
+const appScreen = document.getElementById('appScreen');
+const userBar = document.getElementById('userBar');
+const userEmailLabel = document.getElementById('userEmailLabel');
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const authError = document.getElementById('authError');
+const loginBtn = document.getElementById('loginBtn');
+const registerBtn = document.getElementById('registerBtn');
+const logoutBtn = document.getElementById('logoutBtn');
 
 // Kategori dropdown'larını sabit kategori listesinden doldurur
 function fillCategoryOptions() {
@@ -88,10 +105,19 @@ async function addTask() {
   // Boş görev eklenmesini engelle
   if (!isValidTaskText(text)) return;
 
+  // Giriş yapılmamışsa ekleme yapılamaz
+  if (!auth.currentUser) return;
+
   // Seçilen kategori (güvenlik için normalize edilir)
   const category = normalizeCategory(categorySelect.value);
 
-  await addDoc(tasksCollection, { text, done: false, category });
+  await addDoc(collection(db, 'tasks'), {
+    text,
+    done: false,
+    category,
+    // Görevi ekleyen kullanıcının kimliği
+    userId: auth.currentUser.uid
+  });
 
   // Input kutusunu temizle
   taskInput.value = '';
@@ -111,6 +137,9 @@ taskInput.addEventListener('keydown', (e) => {
 // Firestore'dan en son gelen görevler (filtre değişince tekrar çizmek için saklanır)
 let latestTasks = [];
 
+// Aktif Firestore dinleyicisinin aboneliğini durduran fonksiyon
+let unsubscribeTasks = null;
+
 // Seçili filtreye göre görev listesini yeniden çizer
 function renderTasks() {
   taskList.innerHTML = '';
@@ -125,17 +154,72 @@ function renderTasks() {
 // Filtre değiştiğinde listeyi yeniden çiz
 filterSelect.addEventListener('change', renderTasks);
 
-// Firestore'daki değişiklikleri anlık dinle ve listeyi güncelle
-onSnapshot(tasksCollection, (snapshot) => {
-  latestTasks = snapshot.docs.map((docSnap) => {
-    const data = docSnap.data();
-    // Eski görevlerde category alanı olmayabilir; yoksa "Genel" say
-    return {
-      id: docSnap.id,
-      text: data.text,
-      done: data.done,
-      category: normalizeCategory(data.category)
-    };
+// Giriş yapan kullanıcının görevlerini Firestore'dan anlık dinlemeye başlar
+function startTaskListener(uid) {
+  const userTasksQuery = query(collection(db, 'tasks'), where('userId', '==', uid));
+  unsubscribeTasks = onSnapshot(userTasksQuery, (snapshot) => {
+    latestTasks = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        text: data.text,
+        done: data.done,
+        category: normalizeCategory(data.category)
+      };
+    });
+    renderTasks();
   });
-  renderTasks();
+}
+
+// Görev dinleyicisini durdurur ve listeyi temizler (çıkış yapıldığında)
+function stopTaskListener() {
+  if (unsubscribeTasks) {
+    unsubscribeTasks();
+    unsubscribeTasks = null;
+  }
+  latestTasks = [];
+  taskList.innerHTML = '';
+}
+
+// Kayıt ol butonu
+registerBtn.addEventListener('click', async () => {
+  authError.textContent = '';
+  try {
+    await createUserWithEmailAndPassword(auth, authEmail.value.trim(), authPassword.value);
+  } catch (err) {
+    authError.textContent = getAuthErrorMessage(err.code);
+  }
+});
+
+// Giriş yap butonu
+loginBtn.addEventListener('click', async () => {
+  authError.textContent = '';
+  try {
+    await signInWithEmailAndPassword(auth, authEmail.value.trim(), authPassword.value);
+  } catch (err) {
+    authError.textContent = getAuthErrorMessage(err.code);
+  }
+});
+
+// Çıkış yap butonu
+logoutBtn.addEventListener('click', () => signOut(auth));
+
+// Giriş durumu değiştiğinde ekranları ve görev dinleyicisini yönet
+onAuthStateChanged(auth, (user) => {
+  authError.textContent = '';
+  authEmail.value = '';
+  authPassword.value = '';
+
+  if (user) {
+    authScreen.classList.add('hidden');
+    userBar.classList.remove('hidden');
+    appScreen.classList.remove('hidden');
+    userEmailLabel.textContent = user.email;
+    startTaskListener(user.uid);
+  } else {
+    authScreen.classList.remove('hidden');
+    userBar.classList.add('hidden');
+    appScreen.classList.add('hidden');
+    stopTaskListener();
+  }
 });

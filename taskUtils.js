@@ -19,3 +19,19 @@ export function normalizeCategory(category) {
   }
   return category;
 }
+
+// Firebase Auth hata kodlarını kullanıcıya gösterilecek Türkçe mesajlara çevirir
+const AUTH_ERROR_MESSAGES = {
+  'auth/email-already-in-use': 'Bu e-posta adresi zaten kayıtlı.',
+  'auth/invalid-email': 'Geçersiz e-posta adresi.',
+  'auth/weak-password': 'Şifre en az 6 karakter olmalı.',
+  'auth/wrong-password': 'E-posta veya şifre hatalı.',
+  'auth/user-not-found': 'E-posta veya şifre hatalı.',
+  'auth/invalid-credential': 'E-posta veya şifre hatalı.'
+};
+
+const DEFAULT_AUTH_ERROR_MESSAGE = 'Bir hata oluştu, lütfen tekrar deneyin.';
+
+export function getAuthErrorMessage(code) {
+  return AUTH_ERROR_MESSAGES[code] || DEFAULT_AUTH_ERROR_MESSAGE;
+}

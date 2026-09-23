@@ -11,22 +11,43 @@
   <div class="container">
     <h1>Yapılacaklar Listesi</h1>
 
-    <!-- Görev ekleme kutusu -->
-    <div class="input-area">
-      <input type="text" id="taskInput" placeholder="Yeni görev yaz...">
-      <!-- Yeni görev için kategori seçimi -->
-      <select id="categorySelect"></select>
-      <button id="addBtn">Ekle</button>
+    <!-- Giriş/Kayıt ekranı: kullanıcı giriş yapmadan bu ekran gösterilir -->
+    <div id="authScreen">
+      <input type="email" id="authEmail" placeholder="E-posta">
+      <input type="password" id="authPassword" placeholder="Şifre">
+      <div class="auth-buttons">
+        <button id="loginBtn">Giriş Yap</button>
+        <button id="registerBtn">Kayıt Ol</button>
+      </div>
+      <!-- Giriş/kayıt hatalarının gösterileceği alan -->
+      <p id="authError" class="error-text"></p>
     </div>
 
-    <!-- Listeyi kategoriye göre filtrelemek için -->
-    <div class="filter-area">
-      <label for="filterSelect">Kategori:</label>
-      <select id="filterSelect"></select>
+    <!-- Giriş yapan kullanıcı bilgisi ve çıkış butonu -->
+    <div id="userBar" class="user-bar hidden">
+      <span id="userEmailLabel"></span>
+      <button id="logoutBtn">Çıkış Yap</button>
     </div>
 
-    <!-- Görevlerin listeleneceği alan -->
-    <ul id="taskList"></ul>
+    <!-- Görev listesi ekranı: sadece giriş yapıldığında gösterilir -->
+    <div id="appScreen" class="hidden">
+      <!-- Görev ekleme kutusu -->
+      <div class="input-area">
+        <input type="text" id="taskInput" placeholder="Yeni görev yaz...">
+        <!-- Yeni görev için kategori seçimi -->
+        <select id="categorySelect"></select>
+        <button id="addBtn">Ekle</button>
+      </div>
+
+      <!-- Listeyi kategoriye göre filtrelemek için -->
+      <div class="filter-area">
+        <label for="filterSelect">Kategori:</label>
+        <select id="filterSelect"></select>
+      </div>
+
+      <!-- Görevlerin listeleneceği alan -->
+      <ul id="taskList"></ul>
+    </div>
   </div>
 
   <!-- JS dosyasını bağla (Firebase için module olarak) -->

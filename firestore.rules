@@ -1,0 +1,18 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // "tasks" koleksiyonu: sadece giriş yapmış kullanıcılar erişebilir
+    match /tasks/{taskId} {
+      // Okuma, güncelleme ve silme: sadece görevin sahibi olan kullanıcı
+      allow read, update, delete: if request.auth != null
+                                   && resource.data.userId == request.auth.uid;
+
+      // Oluşturma: giriş yapılmış olmalı ve yeni belgedeki userId,
+      // isteği yapan kullanıcının kimliğiyle eşleşmeli
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+    }
+  }
+}

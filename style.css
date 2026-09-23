@@ -107,3 +107,64 @@ h1 {
   border-radius: 10px;
   white-space: nowrap;
 }
+
+/* Ekranları gizlemek için ortak sınıf */
+.hidden {
+  display: none;
+}
+
+/* Giriş/Kayıt ekranındaki inputlar */
+#authScreen input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Giriş ve kayıt butonlarını yan yana yerleştir */
+.auth-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.auth-buttons button {
+  flex: 1;
+  padding: 8px 12px;
+  cursor: pointer;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+.auth-buttons button:hover {
+  background-color: #45a049;
+}
+
+/* Giriş/kayıt hata mesajı */
+.error-text {
+  color: red;
+  font-size: 13px;
+  min-height: 16px;
+}
+
+/* Giriş yapan kullanıcı bilgi çubuğu */
+.user-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  font-size: 13px;
+  color: #555;
+}
+
+.user-bar button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: red;
+  font-size: 13px;
+}

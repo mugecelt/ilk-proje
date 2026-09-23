@@ -1,6 +1,7 @@
 // Firebase yapılandırması ve başlatma
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBC6WI6_SyokvtY7XSq0x8-YTQWGNedSyQ",
@@ -14,3 +15,5 @@ const firebaseConfig = {
 // Firebase uygulamasını başlat ve Firestore'u dışa aktar
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+// Kimlik doğrulama (giriş/kayıt/çıkış) için Auth servisi
+export const auth = getAuth(app);
