@@ -1,33 +1,25 @@
+// Firestore bağlantısı ve gerekli fonksiyonlar
+import { db } from './firebase-config.js';
+import {
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { isValidTaskText } from './taskUtils.js';
+
 // Gerekli HTML elemanlarını seç
 const taskInput = document.getElementById('taskInput');
 const addBtn = document.getElementById('addBtn');
 const taskList = document.getElementById('taskList');
 
-// localStorage'da kullanılacak anahtar
-const STORAGE_KEY = 'todoTasks';
-
-// Kayıtlı görevleri localStorage'dan oku (yoksa boş dizi)
-function loadTasks() {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
-}
-
-// Görevleri diziden alıp localStorage'a kaydet
-function saveTasks(tasks) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-}
-
-// Mevcut listedeki görevleri (DOM'dan) diziye çevirip kaydet
-function persistCurrentTasks() {
-  const tasks = [...taskList.children].map(li => ({
-    text: li.querySelector('span').textContent,
-    done: li.classList.contains('done')
-  }));
-  saveTasks(tasks);
-}
+// Firestore'daki "tasks" koleksiyonuna referans
+const tasksCollection = collection(db, 'tasks');
 
 // Tek bir görev satırı (li) oluşturur
-function createTaskItem(text, done) {
+function createTaskItem(id, text, done) {
   const li = document.createElement('li');
   if (done) li.classList.add('done');
 
@@ -36,8 +28,7 @@ function createTaskItem(text, done) {
   checkbox.type = 'checkbox';
   checkbox.checked = done;
   checkbox.addEventListener('change', () => {
-    li.classList.toggle('done', checkbox.checked);
-    persistCurrentTasks();
+    updateDoc(doc(db, 'tasks', id), { done: checkbox.checked });
   });
 
   // Görev metni
@@ -48,8 +39,7 @@ function createTaskItem(text, done) {
   const deleteBtn = document.createElement('button');
   deleteBtn.textContent = '✕';
   deleteBtn.addEventListener('click', () => {
-    li.remove();
-    persistCurrentTasks();
+    deleteDoc(doc(db, 'tasks', id));
   });
 
   li.appendChild(checkbox);
@@ -58,28 +48,18 @@ function createTaskItem(text, done) {
   return li;
 }
 
-// Yeni görev ekleme fonksiyonu
-function addTask() {
+// Yeni görevi Firestore'a ekler
+async function addTask() {
   const text = taskInput.value.trim();
 
   // Boş görev eklenmesini engelle
-  if (text === '') return;
+  if (!isValidTaskText(text)) return;
 
-  const li = createTaskItem(text, false);
-  taskList.appendChild(li);
-  persistCurrentTasks();
+  await addDoc(tasksCollection, { text, done: false });
 
   // Input kutusunu temizle
   taskInput.value = '';
   taskInput.focus();
-}
-
-// Sayfa açılırken kayıtlı görevleri listeye yükle
-function renderSavedTasks() {
-  const tasks = loadTasks();
-  tasks.forEach(task => {
-    taskList.appendChild(createTaskItem(task.text, task.done));
-  });
 }
 
 // Ekle butonuna tıklanınca görev ekle
@@ -92,5 +72,11 @@ taskInput.addEventListener('keydown', (e) => {
   }
 });
 
-// Sayfa yüklendiğinde kayıtlı görevleri göster
-renderSavedTasks();
+// Firestore'daki değişiklikleri anlık dinle ve listeyi güncelle
+onSnapshot(tasksCollection, (snapshot) => {
+  taskList.innerHTML = '';
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    taskList.appendChild(createTaskItem(docSnap.id, data.text, data.done));
+  });
+});
